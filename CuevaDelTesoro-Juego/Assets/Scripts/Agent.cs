@@ -4,24 +4,33 @@ using UnityEngine;
 
 public class KnowledgeBase
 {
-    //<Cell, <Epoch, Knowledge>>
-    private Dictionary<Vector2, Dictionary<int, bool[]>> knowledge = new Dictionary<Vector2, Dictionary<int, bool[]>>();
+    // Zona de hechos para inferir conocimiento
+    //<Cell, Knowledge (Hedor, Brisa, Resplandor, Golpe)>
+    private Dictionary<Vector2, bool[]> knowledgePerceptions = new Dictionary<Vector2, bool[]>();
 
-    //<Cell, Visited>
+    private Dictionary<Vector2, bool> posibleMonster;
+    private Dictionary<Vector2, bool> posibleCliff;
+    private Dictionary<Vector2, bool> noMonster;
+    private Dictionary<Vector2, bool> noCliff;
+
+    // Conocimiento inferido, se conoce con seguridad el tipo de celda 
+    private Dictionary<Vector2, CellType> knowledgeInfered = new Dictionary<Vector2, CellType>();
+
+    //<Cell, Visited>, las celdas visitadas por el agente
     private Dictionary<Vector2, bool> knowledgeVisited = new Dictionary<Vector2, bool>();
 
-    public void Inform(Vector2 gridPosition, bool[] knowledgeVector, int epoch)
+    //Meta
+    private bool hasTresor;
+
+    public void Inform(Vector2 gridPosition, bool[] knowledgeVector)
     {
-        Dictionary<int, bool[]> cellPerception;
-        if (!knowledge.ContainsKey(gridPosition))
+        if (!knowledgePerceptions.ContainsKey(gridPosition))
         {
-            cellPerception = new Dictionary<int, bool[]>();
-            cellPerception.Add(epoch, knowledgeVector);
-            knowledge.Add(gridPosition, cellPerception);
+            knowledgePerceptions.Add(gridPosition, knowledgeVector);
         }
         else
         {
-            knowledge[gridPosition].Add(epoch, knowledgeVector);
+            knowledgePerceptions[gridPosition] = knowledgeVector;
         }
     }
 
@@ -30,7 +39,68 @@ public class KnowledgeBase
         knowledgeVisited.Add(gridPosition, true);
     }
 
-    //Si la posición preguntada es segura
+    //Aplicar las reglas para inferir conocimiento (deductivo)
+    public void InferCell(Vector2 gridPosition)
+    {
+        int[] lookX = { -1, 0, 1, 0 };
+        int[] lookY = { 0, -1, 0, 1 };
+
+        //Si hay resplandor hay un tesoro
+        if (knowledgePerceptions[gridPosition][2])
+        {
+            SetKnowledgeInfered(gridPosition, CellType.Tresor);
+        }
+        //Si no hay ningún efecto las casillas adyacentes son seguras.
+        if(!knowledgePerceptions[gridPosition][0] && !knowledgePerceptions[gridPosition][1] && !knowledgePerceptions[gridPosition][3])
+        {
+            for (int i = 0; i < lookX.Length; i++)
+            {
+                Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
+                SetKnowledgeInfered(adjacentPosition, CellType.Empty);
+            }
+        }
+        else if (knowledgePerceptions[gridPosition][0]) //Hedor
+        {
+            for (int i = 0; i < lookX.Length; i++) //Posible monstruo en las adyacentes
+            {
+                Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
+                if (!posibleMonster.ContainsKey(adjacentPosition))
+                {
+                    posibleMonster.Add(adjacentPosition, true);
+                }
+            }
+        }
+        else if (knowledgePerceptions[gridPosition][1]) //Brisa
+        {
+            for (int i = 0; i < lookX.Length; i++) //Posible acantilado en las adyacentes
+            {
+                Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
+                if (!posibleCliff.ContainsKey(adjacentPosition))
+                {
+                    posibleCliff.Add(adjacentPosition, true);
+                }
+            }
+        }
+
+        //Llegar a conclusiones de noCliff y noMonster
+        //...
+
+        // Si se sabe que no hay monstruo ni acantilado ni tesoro la celda está vacía
+        if(noCliff[gridPosition] && noMonster[gridPosition] && knowledgeInfered[gridPosition] != CellType.Tresor)
+        {
+            SetKnowledgeInfered(gridPosition, CellType.Empty);
+        }
+    }
+
+    private void SetKnowledgeInfered(Vector2 gridPosition, CellType cellType)
+    {
+        if (!knowledgeInfered.ContainsKey(gridPosition))
+        {
+            knowledgeInfered.Add(gridPosition, cellType);
+        }
+    }
+
+    //Si la posición preguntada es segura (reactivo)
     public bool Ask(Vector2 gridPosition)
     {
         //Si no tiene el tesoro (iterar por celdas seguras)
@@ -38,6 +108,27 @@ public class KnowledgeBase
         //Si tiene el tesoro (volver por las celdas ok)
 
         return false;
+    }
+
+    //Devuelve la prioridad de la acción a tomar -1: No, 1: Poca prioridad, 2: Mucha prioridad (deductivo)
+    public int AskPriority(Vector2 gridPosition)
+    {
+        if (!hasTresor) //Si no tiene el tesoro (iterar por celdas seguras)
+        {
+            if (knowledgeInfered.ContainsKey(gridPosition)) // Hay conocimiento sobre el estado de la celda
+            {
+                if (knowledgeInfered[gridPosition] == CellType.Tresor) return 2;
+                else if (knowledgeInfered[gridPosition] == CellType.Empty) return 1;
+                else return -1;
+            }
+        }
+        else //Si tiene el tesoro (volver por las celdas ok)
+        {
+
+        }
+        
+
+        return -1; //No conviene tomar esta casilla
     }
 }
 
@@ -49,6 +140,15 @@ public class Enviroment
         bool[] perception = { false, false, false, false };
         int x = (int)gridPosition.y;
         int y = (int)gridPosition.y;
+
+        //Si hay un muro es recibe un golpe. Marcaremos las casillas fuera del área con la percepción Golpe.
+        if (!GridManager.GetGrid().XYInGrid(x, y)) //La casilla está fuera del área (hay un muro).
+        {
+            perception[3] = true; //Golpe
+            return perception;
+        }
+
+        //Ver si la casilla a consultar hay un tesoro
         CellType currentCellType = GridManager.GetGrid().GetGridObject(x, y).GetCellType();
         if (currentCellType == CellType.Tresor)
         {
@@ -56,18 +156,13 @@ public class Enviroment
         }
 
         //Mirar el conocimiento del entorno para indicar si hay efectos causados por casillas adyacentes
-        int[] lookX = { -1, 0, 0, 1 };
-        int[] lookY = { 0, -1, 1, 0 };
+        int[] lookX = { -1, 0, 1, 0 };
+        int[] lookY = { 0, -1, 0, 1 };
         for (int i = 0; i < lookX.Length; i++)
         {
             int _x = (int)gridPosition.x + lookX[i];
             int _y = (int)gridPosition.y + lookY[i];
-            //Revisar esta condición porque el enunciado dice que al avanzara un muro es cuando recibe un golpe (no en adyacentes al muro)
-            if(!GridManager.GetGrid().XYInGrid(_x, _y)) //La casilla está fuera del área (hay un muro).
-            {
-                perception[3] = true; //Golpe
-                continue;
-            }
+            
             CellType surroundingCellType = GridManager.GetGrid().GetGridObject(_x, _y).GetCellType();
             switch (surroundingCellType)
             {
@@ -93,52 +188,56 @@ public class Action
 public class Agent : MonoBehaviour
 {
     private KnowledgeBase kb;
-    private int tickCounter;
-    private bool hasTresor;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        kb = new KnowledgeBase();
-        PercieveAndInformEnvironmentSurroundings(transform.position, tickCounter);
-    }
+    int[] lookX = { -1, 0, 1, 0 };
+    int[] lookY = { 0, -1, 0, 1 };
 
-    // Update is called once per frame
+
+    // Tick is called once per game frame
     private void Tick()
     {
-        PercieveAndInformEnvironmentSurroundings(transform.position, tickCounter);
-        Action action;
-        if ((action = AskForActionsReactive(transform.position)) != null)
+        int x, y;
+        GridManager.GetGrid().GetXY(transform.position, out x, out y);
+
+        PercieveAndInformEnvironmentSurroundings(x, y); // Paso 1: Percibir ambiente e informar a la base de conocimientos
+
+        TryToInfer(x, y); // Paso 2: Inferir conocimiento en la base de conocimientos
+
+        if (AskForActionsDeductive(x, y) != null) // Paso 3: Toma de decisiones
         {
-            int x, y;
-            GridManager.GetGrid().GetXY(transform.position, out x, out y);
-            kb.InformAction(new Vector2(x, y));
-            tickCounter++;
+            kb.InformAction(new Vector2(x, y)); // Paso 4: Informar de la acción tomada (útil para marcar la celda ya visitada)
+        }
+        else
+        {
+            Debug.LogWarning("No actions allowed");
         }
     }
 
     //Recibir percepciones del entorno e informar a la base de conocimientos
-    private void PercieveAndInformEnvironmentSurroundings(Vector3 worldPosition, int tickCounter)
+    private void PercieveAndInformEnvironmentSurroundings(int x, int y)
     {
-        int[] lookX = { -1, 0, 0, 1 };
-        int[] lookY = { 0, -1, 1, 0 };
-        int x, y;
-        GridManager.GetGrid().GetXY(worldPosition, out x, out y);
         for (int i = 0; i < lookX.Length; i++) // Mirar alrededor
         {
             int _x = x + lookX[i];
             int _y = y + lookY[i];
-            kb.Inform(new Vector2(_x, _y), Enviroment.GetPerception(new Vector2(_x, _y)), tickCounter);
+            kb.Inform(new Vector2(_x, _y), Enviroment.GetPerception(new Vector2(_x, _y)));
         }
     }
 
-    private Action AskForActionsReactive(Vector3 worldPosition)
+    private void TryToInfer(int x, int y)
     {
-        int x, y;
-        GridManager.GetGrid().GetXY(worldPosition, out x, out y);
+        for (int i = 0; i < lookX.Length; i++) // Inferir alrededor
+        {
+            int _x = x + lookX[i];
+            int _y = y + lookY[i];
+            kb.InferCell(new Vector2(_x, _y));
+        }
+    }
 
-        int[] lookX = { -1, 0, 1, 0 };
-        int[] lookY = { 0, -1, 0, 1 };
+    //Devuelve la primera acción aplicable (agente reactivo)
+    private Action AskForActionsReactive(int x, int y)
+    {
+        Directions[] directions = { Directions.West, Directions.North, Directions.East, Directions.South };
         for (int i = 0; i < lookX.Length; i++)
         {
             int _x = x + lookX[i];
@@ -146,26 +245,48 @@ public class Agent : MonoBehaviour
             if (kb.Ask(new Vector2(_x, _y)))
             {
                 Action action = new Action();
-                switch (i)
-                {
-                    case 0:
-                        action.direction = Directions.West;
-                        break;
-                    case 1:
-                        action.direction = Directions.North;
-                        break;
-                    case 2:
-                        action.direction = Directions.East;
-                        break;
-                    case 3:
-                        action.direction = Directions.South;
-                        break;
-                }
+                action.direction = directions[i];
                 transform.position = GridManager.GetGrid().GetWorldPosition(_x, _y);
-                return action; //Devuelve la primera acción aplicable (agente reactivo). Mirar de convertir a agente deductivo devolviendo la acción con mayor prioridad
+                return action; 
             }
         }
         return null;
+    }
+
+    //Devuelve la acción con mayor prioridad (agente deductivo)
+    private Action AskForActionsDeductive(int x, int y)
+    {
+        Directions[] directions = { Directions.West , Directions.North, Directions.East, Directions.South};
+        Action[] actions = new Action[lookX.Length];
+        int bestPriority = -1;
+        int bestActionIndex = -1;
+
+        for (int i = 0; i < lookX.Length; i++)
+        {
+            int _x = x + lookX[i];
+            int _y = y + lookY[i];
+            int priority = kb.AskPriority(new Vector2(_x, _y));
+
+            if (priority > bestPriority)
+            {
+                bestPriority = priority;
+                bestActionIndex = i;
+            }
+
+            actions[i] = new Action();
+            actions[i].direction = directions[i];
+        }
+
+        transform.position = GridManager.GetGrid().GetWorldPosition(x + lookX[bestActionIndex], y + lookY[bestActionIndex]);
+
+        if (bestActionIndex != -1)
+        {
+            return actions[bestActionIndex]; 
+        }
+        else
+        {
+            return null;
+        }
     }
 
 }
