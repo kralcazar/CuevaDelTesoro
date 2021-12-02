@@ -18,17 +18,24 @@ using UnityEngine.EventSystems;
 public class DragDrop : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, IEndDragHandler, IDragHandler {
 
     [SerializeField] private Canvas canvas;
+    [SerializeField] private CellType cellType;
 
     private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
+    private Vector3 originalPosition;
 
     private void Awake() {
         rectTransform = GetComponent<RectTransform>();
         canvasGroup = GetComponent<CanvasGroup>();
     }
 
+    private void Start()
+    {
+        originalPosition = transform.position;
+    }
+
     public void OnBeginDrag(PointerEventData eventData) {
-        Debug.Log("OnBeginDrag");
+        //Debug.Log("OnBeginDrag");
         canvasGroup.alpha = .6f;
         canvasGroup.blocksRaycasts = false;
     }
@@ -39,13 +46,16 @@ public class DragDrop : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, I
     }
 
     public void OnEndDrag(PointerEventData eventData) {
-        Debug.Log("OnEndDrag");
+        //Debug.Log("OnEndDrag");
         canvasGroup.alpha = 1f;
         canvasGroup.blocksRaycasts = true;
+
+        transform.position = originalPosition;
+        GridManager.DropElement(cellType);
     }
 
     public void OnPointerDown(PointerEventData eventData) {
-        Debug.Log("OnPointerDown");
+        //Debug.Log("OnPointerDown");
     }
 
 }

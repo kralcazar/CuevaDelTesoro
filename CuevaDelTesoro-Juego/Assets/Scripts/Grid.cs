@@ -50,6 +50,11 @@ public class Grid<TGridObject> {
         return gridT;
     }
 
+    public bool XYInGrid(int x, int y)
+    {
+        return (x >= 0 && y >= 0 && x < width && y < height);
+    }
+
     //Get a worldposition from X and Y
     public Vector3 GetWorldPosition(int x, int y) {
         return new Vector3(x, y) * cellSize + gridT.position;
@@ -62,7 +67,7 @@ public class Grid<TGridObject> {
     }
 
     public void SetGridObject(int x, int y, TGridObject value) {
-        if (x >= 0 && y >= 0 && x < width && y < height) {
+        if (XYInGrid(x,y)) {
             gridArray[x, y] = value;
             TriggerGridObjectChanged(x, y);
         }
@@ -78,7 +83,7 @@ public class Grid<TGridObject> {
     }
 
     public TGridObject GetGridObject(int x, int y) {
-        if (x >= 0 && y >= 0 && x < width && y < height) {
+        if (XYInGrid(x, y)) {
             return gridArray[x, y];
         } else {
             return default(TGridObject);

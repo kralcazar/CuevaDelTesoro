@@ -15,12 +15,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class ItemSlot : MonoBehaviour, IDropHandler {
+public class CellDropHandler : MonoBehaviour, IDropHandler {
 
     public void OnDrop(PointerEventData eventData) {
         Debug.Log("OnDrop");
+        Debug.Log(eventData.pointerDrag);
         if (eventData.pointerDrag != null) {
-            eventData.pointerDrag.GetComponent<RectTransform>().anchoredPosition = GetComponent<RectTransform>().anchoredPosition;
+            //eventData.pointerDrag.GetComponent<RectTransform>().anchoredPosition = GetComponent<RectTransform>().anchoredPosition;
         }
     }
 
