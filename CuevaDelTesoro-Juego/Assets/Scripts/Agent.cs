@@ -47,23 +47,30 @@ public class Enviroment
     {
         //Hedor, Brisa, Resplandor, Golpe
         bool[] perception = { false, false, false, false };
+        int x = (int)gridPosition.y;
+        int y = (int)gridPosition.y;
+        CellType currentCellType = GridManager.GetGrid().GetGridObject(x, y).GetCellType();
+        if (currentCellType == CellType.Tresor)
+        {
+            perception[2] = true; //Resplandor
+        }
+
+        //Mirar el conocimiento del entorno para indicar si hay efectos causados por casillas adyacentes
         int[] lookX = { -1, 0, 0, 1 };
         int[] lookY = { 0, -1, 1, 0 };
         for (int i = 0; i < lookX.Length; i++)
         {
             int _x = (int)gridPosition.x + lookX[i];
             int _y = (int)gridPosition.y + lookY[i];
+            //Revisar esta condición porque el enunciado dice que al avanzara un muro es cuando recibe un golpe (no en adyacentes al muro)
             if(!GridManager.GetGrid().XYInGrid(_x, _y)) //La casilla está fuera del área (hay un muro).
             {
                 perception[3] = true; //Golpe
                 continue;
             }
-            CellType cellType = GridManager.GetGrid().GetGridObject(_x, _y).GetCellType();
-            switch (cellType)
+            CellType surroundingCellType = GridManager.GetGrid().GetGridObject(_x, _y).GetCellType();
+            switch (surroundingCellType)
             {
-                case CellType.Tresor:
-                    perception[2] = true; //Resplandor
-                    break;
                 case CellType.Cliff:
                     perception[1] = true; //Brisa
                     break;
@@ -87,6 +94,7 @@ public class Agent : MonoBehaviour
 {
     private KnowledgeBase kb;
     private int tickCounter;
+    private bool hasTresor;
 
     // Start is called before the first frame update
     void Start()
@@ -100,7 +108,7 @@ public class Agent : MonoBehaviour
     {
         PercieveAndInformEnvironmentSurroundings(transform.position, tickCounter);
         Action action;
-        if ((action = AskForActions(transform.position)) != null)
+        if ((action = AskForActionsReactive(transform.position)) != null)
         {
             int x, y;
             GridManager.GetGrid().GetXY(transform.position, out x, out y);
@@ -116,7 +124,7 @@ public class Agent : MonoBehaviour
         int[] lookY = { 0, -1, 1, 0 };
         int x, y;
         GridManager.GetGrid().GetXY(worldPosition, out x, out y);
-        for (int i = 0; i < lookX.Length; i++)
+        for (int i = 0; i < lookX.Length; i++) // Mirar alrededor
         {
             int _x = x + lookX[i];
             int _y = y + lookY[i];
@@ -124,7 +132,7 @@ public class Agent : MonoBehaviour
         }
     }
 
-    private Action AskForActions(Vector3 worldPosition)
+    private Action AskForActionsReactive(Vector3 worldPosition)
     {
         int x, y;
         GridManager.GetGrid().GetXY(worldPosition, out x, out y);
@@ -135,7 +143,7 @@ public class Agent : MonoBehaviour
         {
             int _x = x + lookX[i];
             int _y = y + lookY[i];
-            if(kb.Ask(new Vector2(_x, _y)))
+            if (kb.Ask(new Vector2(_x, _y)))
             {
                 Action action = new Action();
                 switch (i)
@@ -154,9 +162,10 @@ public class Agent : MonoBehaviour
                         break;
                 }
                 transform.position = GridManager.GetGrid().GetWorldPosition(_x, _y);
-                return action;
+                return action; //Devuelve la primera acción aplicable (agente reactivo). Mirar de convertir a agente deductivo devolviendo la acción con mayor prioridad
             }
         }
         return null;
     }
+
 }
