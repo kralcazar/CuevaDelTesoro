@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    public bool debug;
+
     public static int gridSize;
     public static int numAgents;
     public static int numMonsters;
@@ -24,6 +26,13 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         if (instance == null) instance = this;
+        timePeriod = timeTick; //Empezar de una
+        if (debug)
+        {
+            gridSize = 8;
+            numAgents = 1;
+            InitGame();
+        }
     }
 
     public static void InitGame()
@@ -53,6 +62,11 @@ public class GameManager : MonoBehaviour
     public void StartGame()
     {
         playing = true;
+    }
+
+    public void StopGame()
+    {
+        playing = false;
     }
 
     void Update()

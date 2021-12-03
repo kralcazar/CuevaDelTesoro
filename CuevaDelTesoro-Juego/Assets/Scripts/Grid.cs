@@ -52,7 +52,8 @@ public class Grid<TGridObject> {
 
     public bool XYInGrid(int x, int y)
     {
-        return (x >= 0 && y >= 0 && x < width && y < height);
+        bool value = (x >= 0 && y >= 0 && x < width && y < height);
+        return value;
     }
 
     //Get a worldposition from X and Y

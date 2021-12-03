@@ -33,6 +33,12 @@ public class KnowledgeBase
         {
             knowledgePerceptions[gridPosition] = knowledgeVector;
         }
+        Debug.Log("Inform: "); 
+        Debug.Log(gridPosition);
+        for (int i = 0; i < knowledgePerceptions[gridPosition].Length; i++)
+        {
+            Debug.Log(knowledgePerceptions[gridPosition][i]);
+        }
     }
 
     public void InformAction(Vector2 gridPosition)
@@ -43,70 +49,79 @@ public class KnowledgeBase
     //Aplicar las reglas para inferir conocimiento (deductivo)
     public void InferCell(Vector2 gridPosition)
     {
-        int[] lookX = { -1, 0, 1, 0 };
-        int[] lookY = { 0, -1, 0, 1 };
+        int[] lookX = { 0, -1, 0, 1, 0 };
+        int[] lookY = { 0, 0, -1, 0, 1 };
 
-        //Si hay resplandor hay un tesoro
-        if (knowledgePerceptions[gridPosition][2])
+        
+        if (knowledgeVisited.ContainsKey(gridPosition))
         {
-            SetKnowledgeInfered(gridPosition, CellType.Tresor);
+            SetKnowledgeInfered(gridPosition, CellType.Empty);
         }
-        //Si no hay ningún efecto las casillas adyacentes son seguras.
-        if (!knowledgePerceptions[gridPosition][0] && !knowledgePerceptions[gridPosition][1] && !knowledgePerceptions[gridPosition][3])
+        
+        if (knowledgePerceptions.ContainsKey(gridPosition))
         {
-            for (int i = 0; i < lookX.Length; i++)
+
+            //Si hay resplandor hay un tesoro
+            if (knowledgePerceptions[gridPosition][2])
             {
-                Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
-                SetKnowledgeInfered(adjacentPosition, CellType.Empty);
+                SetKnowledgeInfered(gridPosition, CellType.Tresor);
             }
-        }
-
-        if (knowledgePerceptions[gridPosition][0]) //Hedor
-        {
-            for (int i = 0; i < lookX.Length; i++) //Posible monstruo en las adyacentes
+            //Si no hay ningún efecto las casillas adyacentes son seguras.
+            if (!knowledgePerceptions[gridPosition][0] && !knowledgePerceptions[gridPosition][1] && !knowledgePerceptions[gridPosition][3])
             {
-                Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
-                if (!posibleMonster.ContainsKey(adjacentPosition))
+                for (int i = 0; i < lookX.Length; i++)
                 {
-                    posibleMonster.Add(adjacentPosition, true);
+                    Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
+                    SetKnowledgeInfered(adjacentPosition, CellType.Empty);
+                }
+            }
+
+            if (knowledgePerceptions[gridPosition][0]) //Hedor
+            {
+                for (int i = 0; i < lookX.Length; i++) //Posible monstruo en las adyacentes
+                {
+                    Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
+                    if (!posibleMonster.ContainsKey(adjacentPosition))
+                    {
+                        posibleMonster.Add(adjacentPosition, true);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < lookX.Length; i++) //Posible monstruo en las adyacentes
+                {
+                    Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
+                    if (!noMonster.ContainsKey(adjacentPosition))
+                    {
+                        noMonster.Add(adjacentPosition, true);
+                    }
+                }
+            }
+
+            if (knowledgePerceptions[gridPosition][1]) //Brisa
+            {
+                for (int i = 0; i < lookX.Length; i++) //Posible acantilado en las adyacentes
+                {
+                    Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
+                    if (!posibleCliff.ContainsKey(adjacentPosition))
+                    {
+                        posibleCliff.Add(adjacentPosition, true);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < lookX.Length; i++) //Posible acantilado en las adyacentes
+                {
+                    Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
+                    if (!noCliff.ContainsKey(adjacentPosition))
+                    {
+                        noCliff.Add(adjacentPosition, true);
+                    }
                 }
             }
         }
-        else
-        {
-            for (int i = 0; i < lookX.Length; i++) //Posible monstruo en las adyacentes
-            {
-                Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
-                if (!noMonster.ContainsKey(adjacentPosition))
-                {
-                    noMonster.Add(adjacentPosition, true);
-                }
-            }
-        }
-
-        if (knowledgePerceptions[gridPosition][1]) //Brisa
-        {
-            for (int i = 0; i < lookX.Length; i++) //Posible acantilado en las adyacentes
-            {
-                Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
-                if (!posibleCliff.ContainsKey(adjacentPosition))
-                {
-                    posibleCliff.Add(adjacentPosition, true);
-                }
-            }
-        }
-        else
-        {
-            for (int i = 0; i < lookX.Length; i++) //Posible acantilado en las adyacentes
-            {
-                Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
-                if (!noCliff.ContainsKey(adjacentPosition))
-                {
-                    noCliff.Add(adjacentPosition, true);
-                }
-            }
-        }
-
 
 
         // Si se sabe que no hay monstruo ni acantilado ni tesoro la celda está vacía
@@ -117,12 +132,31 @@ public class KnowledgeBase
                 SetKnowledgeInfered(gridPosition, CellType.Empty);
             }
         }
+
+        /*
+        Debug.Log("knowledgePerceptions");
+        foreach (var entry in knowledgePerceptions)
+        {
+            Debug.Log(entry.Key);
+            for (int i = 0; i < entry.Value.Length; i++)
+            {
+                Debug.Log(entry.Value[i]);
+            }
+        }
+        */
+        Debug.Log("knowledgeInfered");
+        foreach (var entry in knowledgeInfered)
+        {
+            Debug.Log(entry.Key);
+            Debug.Log(entry.Value);
+        }
     }
 
     private void SetKnowledgeInfered(Vector2 gridPosition, CellType cellType)
     {
         if (!knowledgeInfered.ContainsKey(gridPosition))
         {
+            if(GridManager.GetGrid().XYInGrid((int)gridPosition.x, (int)gridPosition.y))
             knowledgeInfered.Add(gridPosition, cellType);
         }
     }
@@ -142,8 +176,10 @@ public class KnowledgeBase
     {
         if (!hasTresor) //Si no tiene el tesoro (iterar por celdas seguras)
         {
+            Debug.Log("AskPriority: "+ gridPosition);
             if (knowledgeInfered.ContainsKey(gridPosition)) // Hay conocimiento sobre el estado de la celda
             {
+                Debug.Log(knowledgeInfered[gridPosition]);
                 if (knowledgeInfered[gridPosition] == CellType.Tresor) return 2;
                 else if (knowledgeInfered[gridPosition] == CellType.Empty) return 1;
                 else return -1;

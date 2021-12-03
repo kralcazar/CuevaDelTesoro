@@ -15,7 +15,11 @@ public class Agent : MonoBehaviour
 
     private void Start()
     {
-        kb = new KnowledgeBase();
+        kb = new KnowledgeBase(); 
+        
+        int x, y;
+        GridManager.GetGrid().GetXY(transform.position, out x, out y);
+        kb.InformAction(new Vector2(x, y));
     }
 
     //Se llama una vez por cada iteracción del juego
@@ -45,7 +49,9 @@ public class Agent : MonoBehaviour
         {
             int _x = x + lookX[i];
             int _y = y + lookY[i];
-            kb.Inform(new Vector2(_x, _y), Enviroment.GetPerception(new Vector2(_x, _y)));
+            bool[] percpt = Enviroment.GetPerception(new Vector2(_x, _y));
+            Debug.Log(string.Join(",", percpt)); 
+            kb.Inform(new Vector2(_x, _y), percpt);
         }
     }
 
@@ -91,6 +97,9 @@ public class Agent : MonoBehaviour
             int _x = x + lookX[i];
             int _y = y + lookY[i];
             int priority = kb.AskPriority(new Vector2(_x, _y));
+
+            Debug.Log("gridPosition: "+ new Vector2(_x, _y));
+            Debug.Log("priority: "+ priority);
 
             if (priority > bestPriority)
             {
