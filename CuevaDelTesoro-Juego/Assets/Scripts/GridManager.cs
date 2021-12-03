@@ -15,9 +15,16 @@ public class GridManager : MonoBehaviour
     private Grid<Cell> grid;
 
     public static GridManager instance;
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
+        if (instance == null) instance = this;
+    }
+    // Start is called before the first frame update
+    public void GenerateGrid(int gridSize)
+    {
+        rows = gridSize;
+        cols = gridSize;
+
         if (instance == null)
         {
             instance = this;
