@@ -160,13 +160,10 @@ public class KnowledgeBase
 
     public void InferKnowledgeRules(Vector2 gridPosition)
     {
-
-        Debug.LogError(gridPosition+" : "+knowledgeVisited.ContainsKey(gridPosition));
         //Si la hemos visitado -> Empty
         if (knowledgeVisited.ContainsKey(gridPosition))
         {
             SetKnowledgeInfered(gridPosition, CellType.Empty);
-            Debug.LogError(knowledgeVisited[gridPosition]);
         }
         //Si hay resplandor -> Tresor
         if (knowledgePerceptions[gridPosition][2])
@@ -280,18 +277,18 @@ public class KnowledgeBase
         return false;
     }
 
-    //Devuelve la prioridad de la acción a tomar -1: No, 1: Poca prioridad, 2: Mucha prioridad (deductivo)
+    //Devuelve la prioridad de la acción a tomar MinValue: No, [MinValue..maxDistance*10]: Mayor prioridad, maxDistance: Máxima prioridad (deductivo)
     public int AskPriority(Vector2 gridPosition)
     {
         if (knowledgePerceptions[gridPosition][3]) return int.MinValue; //Golpe
 
         if (!hasTresor) //Si no tiene el tesoro (iterar por celdas seguras)
         {
-            Debug.Log("AskPriority: " + gridPosition);
+            //Debug.Log("AskPriority: " + gridPosition);
 
             if (knowledgeVisited.ContainsKey(gridPosition))
             {
-                Debug.LogError("Ask visited " + knowledgeVisited[gridPosition]);
+                //Debug.LogError("Ask visited " + knowledgeVisited[gridPosition]);
                 //Mínima prioridad para poder volver atrás por el camino visitado
                 //Cuantas más visitas ha hecho menos prioridad tiene
                 return -knowledgeVisited[gridPosition]; 
@@ -299,17 +296,37 @@ public class KnowledgeBase
 
             if (knowledgeInfered.ContainsKey(gridPosition)) // Hay conocimiento sobre el estado de la celda
             {
-                Debug.Log("knowledgeInfered >> "+" : "+ gridPosition + knowledgeInfered[gridPosition]);
+                //Debug.Log("knowledgeInfered >> "+" : "+ gridPosition + knowledgeInfered[gridPosition]);
                 if (knowledgeInfered[gridPosition] == CellType.Tresor) return 2;
                 else if (knowledgeInfered[gridPosition] == CellType.Empty) return 1;
             }
         }
         else //Si tiene el tesoro (volver por las celdas ok)
         {
-
+            if (knowledgeVisited.ContainsKey(gridPosition))
+            {
+                //Mínima prioridad para poder volver atrás por el camino visitado
+                //Cuantas más visitas ha hecho menos prioridad tiene
+                int gridSize = GridManager.GetGrid().GetWidth();
+                float maxDistance = DistanceToStart(new Vector2(gridSize, gridSize));
+                int scoreDistance = Mathf.RoundToInt((maxDistance/DistanceToStart(gridPosition)));
+                if (agent.GetStartGridPosition() == gridPosition)
+                    return Mathf.RoundToInt(maxDistance);
+                return scoreDistance;
+            }
         }
 
 
         return int.MinValue; //No conviene tomar esta casilla
+    }
+
+    public bool HasTresor()
+    {
+        return hasTresor;
+    }
+
+    private float DistanceToStart(Vector2 gridPosition)
+    {
+        return Vector2.Distance(agent.GetStartGridPosition(), gridPosition);
     }
 }

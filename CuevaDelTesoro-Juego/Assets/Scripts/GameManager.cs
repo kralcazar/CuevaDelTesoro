@@ -71,6 +71,11 @@ public class GameManager : MonoBehaviour
         playing = false;
     }
 
+    public static void EndGame()
+    {
+        playing = false;
+    }
+
     void Update()
     {
         if (playing)

@@ -12,6 +12,7 @@ public class Agent : MonoBehaviour
     private KnowledgeBase kb;
     [SerializeField]
     private GameObject debugCellPrefab;
+    private Vector2 startGridPosition;
 
     int[] lookX = { -1, 0, 1, 0 };
     int[] lookY = { 0, 1, 0, -1 };
@@ -22,7 +23,8 @@ public class Agent : MonoBehaviour
         
         int x, y;
         GridManager.GetGrid().GetXY(transform.position, out x, out y);
-        kb.InformAction(new Vector2(x, y));
+        startGridPosition = new Vector2(x, y);
+        kb.InformAction(startGridPosition);
         PercieveAndInformEnvironmentCell(x, y);
         PercieveAndInformEnvironmentSurroundings(x, y); // Paso 0: Percibir la primera celda e informar a la base de conocimientos
         TryToInferCell(x, y);
@@ -34,17 +36,18 @@ public class Agent : MonoBehaviour
     {
         int x, y;
         GridManager.GetGrid().GetXY(transform.position, out x, out y);
-
+        Vector2 currentPosition = new Vector2(x, y);
         if (AskForActionsDeductive(x, y) != null) // Paso 3: Toma de decisiones
         {
             GridManager.GetGrid().GetXY(transform.position, out x, out y); //Tenemos que obtener la nueva posición del agente
-            kb.InformAction(new Vector2(x, y)); // Paso 4: Informar de la acción tomada (útil para marcar la celda ya visitada)
+            currentPosition = new Vector2(x, y);
+            kb.InformAction(currentPosition); // Paso 4: Informar de la acción tomada (útil para marcar la celda ya visitada)
             
             //Si ha encontrado un tesoro lo elimina de la casilla
             CellType cellType = GridManager.GetGrid().GetGridObject(x, y).GetCellType();
             if (cellType == CellType.Tresor)
             {
-                kb.InformTresor(new Vector2(x, y));
+                kb.InformTresor(currentPosition);
                 GridManager.GetGrid().GetGridObject(transform.position).SetCellType(CellType.Empty);
             }
 
@@ -58,6 +61,12 @@ public class Agent : MonoBehaviour
             Debug.LogWarning("No actions allowed");
             //Backtracking
             //TODO
+        }
+
+        if(startGridPosition == currentPosition && kb.HasTresor()) //Agent won
+        {
+            GameManager.EndGame();
+            gameObject.SetActive(false);
         }
     }
 
@@ -170,6 +179,10 @@ public class Agent : MonoBehaviour
         Text textGrid = debugCell.GetComponentInChildren<Text>();
         textGrid.text = text;
         debugCell.transform.position = GridManager.GetGrid().GetWorldPosition((int)gridPosition.x, (int)gridPosition.y);
+    }
 
+    public Vector2 GetStartGridPosition()
+    {
+        return startGridPosition;
     }
 }
