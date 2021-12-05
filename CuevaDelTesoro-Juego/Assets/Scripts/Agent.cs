@@ -13,6 +13,7 @@ public class Agent : MonoBehaviour
     [SerializeField]
     private GameObject debugCellPrefab;
     private Vector2 startGridPosition;
+    private bool agentWon;
 
     int[] lookX = { -1, 0, 1, 0 };
     int[] lookY = { 0, 1, 0, -1 };
@@ -26,17 +27,26 @@ public class Agent : MonoBehaviour
         startGridPosition = new Vector2(x, y);
         kb.InformAction(startGridPosition);
         PercieveAndInformEnvironmentCell(x, y);
-        PercieveAndInformEnvironmentSurroundings(x, y); // Paso 0: Percibir la primera celda e informar a la base de conocimientos
         TryToInferCell(x, y);
-        TryToInferSurroundings(x, y); // Paso 0: Inferir conocimiento en la base de conocimientos
     }
 
     //Se llama una vez por cada iteracción del juego
     public void Tick()
     {
+        if (agentWon)
+        {
+            GameManager.EndGame();
+            gameObject.SetActive(false);
+            return;
+        }
+
         int x, y;
         GridManager.GetGrid().GetXY(transform.position, out x, out y);
         Vector2 currentPosition = new Vector2(x, y);
+
+        PercieveAndInformEnvironmentSurroundings(x, y); // Paso 0: Percibir la primera celda e informar a la base de conocimientos
+        TryToInferSurroundings(x, y); // Paso 0: Inferir conocimiento en la base de conocimientos
+        
         if (AskForActionsDeductive(x, y) != null) // Paso 3: Toma de decisiones
         {
             GridManager.GetGrid().GetXY(transform.position, out x, out y); //Tenemos que obtener la nueva posición del agente
@@ -59,14 +69,11 @@ public class Agent : MonoBehaviour
         else
         {
             Debug.LogWarning("No actions allowed");
-            //Backtracking
-            //TODO
         }
 
         if(startGridPosition == currentPosition && kb.HasTresor()) //Agent won
         {
-            GameManager.EndGame();
-            gameObject.SetActive(false);
+            agentWon = true;
         }
     }
 
@@ -122,7 +129,7 @@ public class Agent : MonoBehaviour
                 Action action = new Action();
                 action.direction = directions[i];
                 Vector3 targetPosition = GridManager.GetGrid().GetWorldPosition(_x, _y);
-                Debug.Log("MoveTo: " + targetPosition);
+                
                 transform.position = targetPosition;
                 return action; 
             }
@@ -144,8 +151,6 @@ public class Agent : MonoBehaviour
             int _y = y + lookY[i];
             int priority = kb.AskPriority(new Vector2(_x, _y));
 
-            Debug.Log("priority: "+ priority);
-
             if (priority > bestPriority) //profundidad
             {
                 bestPriority = priority;
@@ -158,18 +163,11 @@ public class Agent : MonoBehaviour
 
         if (bestPriority == int.MinValue) return null;
 
-        Debug.Log("bestActionIndex: " + bestActionIndex);
-        Debug.Log("bestActionIndex: " + 
-            new Vector2( x + lookX[bestActionIndex], y + lookY[bestActionIndex]));
-
         Vector3 targetPosition = GridManager.GetGrid().GetWorldPosition(x + lookX[bestActionIndex], y + lookY[bestActionIndex]);
         transform.position = targetPosition;
         transform.position +=
                 Vector3.right * GridManager.GetGrid().GetCellSize() / 2
                 + Vector3.up * GridManager.GetGrid().GetCellSize() / 2;
-
-        Debug.Log("Target cell type: "+GridManager.GetGrid().GetGridObject(x + lookX[bestActionIndex], y + lookY[bestActionIndex]).GetCellType());
-
         return actions[bestActionIndex];
     }
 

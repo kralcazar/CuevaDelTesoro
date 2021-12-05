@@ -1336,7 +1336,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debug: 1
-  timeTick: 2
+  timeTick: 0.4
   gridManager: {fileID: 1061348000}
 --- !u!4 &948117048
 Transform:

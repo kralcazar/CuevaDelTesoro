@@ -35,7 +35,7 @@ public class KnowledgeBase
         if (!knowledgePerceptions.ContainsKey(gridPosition))
         {
             knowledgePerceptions.Add(gridPosition, knowledgeVector);
-            Debug.Log("Inform: " + gridPosition + " : " + string.Join(",", knowledgePerceptions[gridPosition]));
+            //Debug.Log("Inform: " + gridPosition + " : " + string.Join(",", knowledgePerceptions[gridPosition]));
         }
         else
         {
@@ -53,7 +53,7 @@ public class KnowledgeBase
         {
             knowledgeVisited[gridPosition]++;
         }
-        Debug.Log("InformVisited: " + gridPosition + " : "+ knowledgeVisited[gridPosition]);
+        //Debug.Log("InformVisited: " + gridPosition + " : "+ knowledgeVisited[gridPosition]);
     }
 
     public void InformTresor(Vector2 gridPosition)
@@ -68,7 +68,7 @@ public class KnowledgeBase
     {        
         if (knowledgePerceptions.ContainsKey(gridPosition))
         {
-            Debug.Log("INFER PERCEPTIONS: " + gridPosition + " : " + string.Join(",", knowledgePerceptions[gridPosition]));
+            //Debug.Log("INFER PERCEPTIONS: " + gridPosition + " : " + string.Join(",", knowledgePerceptions[gridPosition]));
             
             if (knowledgePerceptions[gridPosition][0]) //Hedor
             {
@@ -123,8 +123,8 @@ public class KnowledgeBase
                     Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
                     if (!knowledgePerceptions.ContainsKey(adjacentPosition)) 
                         goto EndMonster;
-                    //Hedor
-                    if (knowledgePerceptions[adjacentPosition][0])
+                    //Hedor y no golpe
+                    if (knowledgePerceptions[adjacentPosition][0] && !knowledgePerceptions[adjacentPosition][3])
                         goto EndMonster;
                 }
                 noMonster.Add(gridPosition, true);
@@ -139,8 +139,8 @@ public class KnowledgeBase
                     Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
                     if (!knowledgePerceptions.ContainsKey(adjacentPosition)) 
                         goto EndCliff;
-                    //Brisa
-                    if (knowledgePerceptions[adjacentPosition][1])
+                    //Brisa y no golpe
+                    if (knowledgePerceptions[adjacentPosition][1] && !knowledgePerceptions[adjacentPosition][3])
                         goto EndCliff;
                 }
                 noCliff.Add(gridPosition, true);
@@ -172,7 +172,7 @@ public class KnowledgeBase
         }
 
 
-        Debug.Log("INFER KNOWLEDGE: " + gridPosition + " : " + string.Join(",", knowledgePerceptions[gridPosition]));
+        //Debug.Log("INFER KNOWLEDGE: " + gridPosition + " : " + string.Join(",", knowledgePerceptions[gridPosition]));
         //Si no hay ningún efecto -> las casillas adyacentes son seguras, se infiere Empty. ¡Sólo si la hemos percibido (podría ser un tesoro)!
         if (!knowledgePerceptions[gridPosition][0] && 
             !knowledgePerceptions[gridPosition][1] && 
@@ -196,7 +196,43 @@ public class KnowledgeBase
 
         if (knowledgeInfered.ContainsKey(gridPosition)) return; //Poda
 
+        //Comprobar la casilla que puede tener un monstruo
+        if (posibleMonster.ContainsKey(gridPosition))
+        {
+            for (int i = 0; i < lookX.Length; i++)
+            {
+                Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
+                if (!knowledgePerceptions.ContainsKey(adjacentPosition))
+                    goto NoMatchPMonster;
 
+                //Hedor o golpe
+                if (!(knowledgePerceptions[adjacentPosition][0] || knowledgePerceptions[adjacentPosition][3]))
+                    goto NoMatchPMonster;
+            }
+            SetKnowledgeInfered(gridPosition, CellType.Monster);
+            return;
+        NoMatchPMonster:;
+        }
+        //Comprobar la casilla que puede tener un acantilado
+        if (posibleCliff.ContainsKey(gridPosition))
+        {
+            for (int i = 0; i < lookX.Length; i++)
+            {
+                Vector2 adjacentPosition = new Vector2((int)gridPosition.x + lookX[i], (int)gridPosition.y + lookY[i]);
+                if (!knowledgePerceptions.ContainsKey(adjacentPosition))
+                {
+                    //TODO: Deducir golpe si no podemos percibir la casilla
+                    goto NoMatchPCliff;
+                }
+
+                //Brisa o golpe
+                if (!(knowledgePerceptions[adjacentPosition][1] || knowledgePerceptions[adjacentPosition][3]))
+                    goto NoMatchPCliff;
+            }
+            SetKnowledgeInfered(gridPosition, CellType.Cliff);
+            return;
+        NoMatchPCliff:;
+        }
 
         //Si en las casillas adyacentes hay hedor/brisa en esta casilla hay monstruo/acantilado        
         if (noMonster.ContainsKey(gridPosition)) //Si ya sabemos que no hay monstruo salimos
@@ -240,9 +276,9 @@ public class KnowledgeBase
         NoMatchCliff:;
 
 
-        //Si se sabe que hay pared saltamos
+        //Si se sabe que hay pared o tesoro saltamos
         if (knowledgeInfered.ContainsKey(gridPosition)) if (knowledgePerceptions[gridPosition][3] || knowledgePerceptions[gridPosition][2]) goto EndWall;
-        // Si se sabe que no hay monstruo ni acantilado ni tesoro la celda está vacía
+        // Si se sabe que no hay monstruo ni acantilado la celda está vacía
         if (noCliff.ContainsKey(gridPosition) && noMonster.ContainsKey(gridPosition))
         {
             if (noCliff[gridPosition] && noMonster[gridPosition])
@@ -261,7 +297,7 @@ public class KnowledgeBase
             if (GridManager.GetGrid().XYInGrid((int)gridPosition.x, (int)gridPosition.y))
             {
                 knowledgeInfered.Add(gridPosition, cellType);
-                Debug.Log("knowledgeInfered: "+ gridPosition + " : " + knowledgeInfered[gridPosition]);
+                //Debug.Log("knowledgeInfered: "+ gridPosition + " : " + knowledgeInfered[gridPosition]);
                 agent.ShowKnowledge(gridPosition, cellType.ToString());
             }
         }
@@ -277,7 +313,7 @@ public class KnowledgeBase
         return false;
     }
 
-    //Devuelve la prioridad de la acción a tomar MinValue: No, [MinValue..maxDistance*10]: Mayor prioridad, maxDistance: Máxima prioridad (deductivo)
+    //Devuelve la prioridad de la acción a tomar MinValue: No, [MinValue..maxDistance*10]: Mayor prioridad, maxDistance*10: Máxima prioridad (deductivo)
     public int AskPriority(Vector2 gridPosition)
     {
         if (knowledgePerceptions[gridPosition][3]) return int.MinValue; //Golpe
@@ -303,20 +339,30 @@ public class KnowledgeBase
         }
         else //Si tiene el tesoro (volver por las celdas ok)
         {
-            if (knowledgeVisited.ContainsKey(gridPosition))
+            if (knowledgeInfered.ContainsKey(gridPosition))
             {
+                //Si no es una casilla vacia no es segura
+                if (knowledgeInfered[gridPosition] != CellType.Empty) return int.MinValue;
+
                 //Mínima prioridad para poder volver atrás por el camino visitado
                 //Cuantas más visitas ha hecho menos prioridad tiene
                 int gridSize = GridManager.GetGrid().GetWidth();
                 float maxDistance = DistanceToStart(new Vector2(gridSize, gridSize));
-                int scoreDistance = Mathf.RoundToInt((maxDistance/DistanceToStart(gridPosition)));
                 if (agent.GetStartGridPosition() == gridPosition)
-                    return Mathf.RoundToInt(maxDistance);
-                return scoreDistance;
+                    return Mathf.RoundToInt(10*maxDistance);
+
+                //Para desempatar por el camino más visitado
+                int scoreVisited = 0;
+                if (knowledgeVisited.ContainsKey(gridPosition))
+                    scoreVisited = knowledgeVisited[gridPosition];
+
+                //Para desempatar por la distancia más corta
+                int scoreDistance = Mathf.RoundToInt(10*(maxDistance/DistanceToStart(gridPosition)));
+                //Debug.LogWarning("scoreDistance:"+ gridPosition+" : " + scoreDistance);
+
+                return scoreVisited + scoreDistance;
             }
         }
-
-
         return int.MinValue; //No conviene tomar esta casilla
     }
 
