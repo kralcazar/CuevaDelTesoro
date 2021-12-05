@@ -25,9 +25,9 @@ public class Enviroment
 
         //Mirar el conocimiento del entorno para indicar si hay efectos causados por casillas adyacentes
         int[] lookX = { -1, 0, 1, 0 };
-        int[] lookY = { 0, -1, 0, 1 };
-        
-        
+        int[] lookY = { 0, 1, 0, -1 };
+
+
         for (int i = 0; i < lookX.Length; i++)
         {
             int _x = (int)gridPosition.x + lookX[i];

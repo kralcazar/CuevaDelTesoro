@@ -26,7 +26,6 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         if (instance == null) instance = this;
-        timePeriod = timeTick; //Empezar de una
         if (debug)
         {
             gridSize = 8;
@@ -63,6 +62,7 @@ public class GameManager : MonoBehaviour
 
     public void StartGame()
     {
+        timePeriod = timeTick; //Empezar el primer paso de la simulación al instante
         playing = true;
     }
 

@@ -126,3 +126,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a566a169b4fbf8f45b4f12f501d26879, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  debugCellPrefab: {fileID: 9008720023819197901, guid: ab809dfec4abdce4bb5d86d9e1d5f607, type: 3}
