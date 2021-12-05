@@ -33,12 +33,12 @@ public class KnowledgeBase
         {
             knowledgePerceptions[gridPosition] = knowledgeVector;
         }
-        Debug.Log("Inform: "); 
-        Debug.Log(gridPosition);
+        /*
         for (int i = 0; i < knowledgePerceptions[gridPosition].Length; i++)
         {
             Debug.Log(knowledgePerceptions[gridPosition][i]);
         }
+        */
     }
 
     public void InformAction(Vector2 gridPosition)
@@ -46,13 +46,18 @@ public class KnowledgeBase
         knowledgeVisited.Add(gridPosition, true);
     }
 
+    public void InformTresor(Vector2 gridPosition)
+    {
+        hasTresor = true;
+    }
+
     //Aplicar las reglas para inferir conocimiento (deductivo)
     public void InferCell(Vector2 gridPosition)
     {
         int[] lookX = { 0, -1, 0, 1, 0 };
-        int[] lookY = { 0, 0, -1, 0, 1 };
+        int[] lookY = { 0, 0, 1, 0, -1 };
 
-        
+
         if (knowledgeVisited.ContainsKey(gridPosition))
         {
             SetKnowledgeInfered(gridPosition, CellType.Empty);
@@ -143,13 +148,13 @@ public class KnowledgeBase
                 Debug.Log(entry.Value[i]);
             }
         }
-        */
+        
         Debug.Log("knowledgeInfered");
         foreach (var entry in knowledgeInfered)
         {
             Debug.Log(entry.Key);
             Debug.Log(entry.Value);
-        }
+        }*/
     }
 
     private void SetKnowledgeInfered(Vector2 gridPosition, CellType cellType)
@@ -176,6 +181,8 @@ public class KnowledgeBase
     {
         if (!hasTresor) //Si no tiene el tesoro (iterar por celdas seguras)
         {
+            if (knowledgeVisited.ContainsKey(gridPosition)) return -1;
+
             Debug.Log("AskPriority: "+ gridPosition);
             if (knowledgeInfered.ContainsKey(gridPosition)) // Hay conocimiento sobre el estado de la celda
             {

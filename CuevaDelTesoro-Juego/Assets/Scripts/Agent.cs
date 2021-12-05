@@ -11,7 +11,7 @@ public class Agent : MonoBehaviour
     private KnowledgeBase kb;
 
     int[] lookX = { -1, 0, 1, 0 };
-    int[] lookY = { 0, -1, 0, 1 };
+    int[] lookY = { 0, 1, 0, -1 };
 
     private void Start()
     {
@@ -34,7 +34,15 @@ public class Agent : MonoBehaviour
         
         if (AskForActionsDeductive(x, y) != null) // Paso 3: Toma de decisiones
         {
+            GridManager.GetGrid().GetXY(transform.position, out x, out y); //Tenemos que obtener la nueva posición del agente
             kb.InformAction(new Vector2(x, y)); // Paso 4: Informar de la acción tomada (útil para marcar la celda ya visitada)
+            //Si ha encontrado un tesoro lo elimina de la casilla
+            CellType cellType = GridManager.GetGrid().GetGridObject(x, y).GetCellType();
+            if (cellType == CellType.Tresor)
+            {
+                kb.InformTresor(new Vector2(x, y));
+                GridManager.GetGrid().GetGridObject(transform.position).SetCellType(CellType.Empty);
+            }
         }
         else
         {
@@ -50,6 +58,7 @@ public class Agent : MonoBehaviour
             int _x = x + lookX[i];
             int _y = y + lookY[i];
             bool[] percpt = Enviroment.GetPerception(new Vector2(_x, _y));
+            Debug.Log("Inform: " + new Vector2(_x, _y));
             Debug.Log(string.Join(",", percpt)); 
             kb.Inform(new Vector2(_x, _y), percpt);
         }
@@ -73,11 +82,14 @@ public class Agent : MonoBehaviour
         {
             int _x = x + lookX[i];
             int _y = y + lookY[i];
+
             if (kb.Ask(new Vector2(_x, _y)))
             {
                 Action action = new Action();
                 action.direction = directions[i];
-                transform.position = GridManager.GetGrid().GetWorldPosition(_x, _y);
+                Vector3 targetPosition = GridManager.GetGrid().GetWorldPosition(_x, _y);
+                Debug.Log("MoveTo: " + targetPosition);
+                transform.position = targetPosition;
                 return action; 
             }
         }
@@ -98,7 +110,6 @@ public class Agent : MonoBehaviour
             int _y = y + lookY[i];
             int priority = kb.AskPriority(new Vector2(_x, _y));
 
-            Debug.Log("gridPosition: "+ new Vector2(_x, _y));
             Debug.Log("priority: "+ priority);
 
             if (priority > bestPriority)
@@ -113,7 +124,16 @@ public class Agent : MonoBehaviour
 
         if (bestActionIndex == -1) return null;
 
-        transform.position = GridManager.GetGrid().GetWorldPosition(x + lookX[bestActionIndex], y + lookY[bestActionIndex]);
+        Debug.Log("bestActionIndex: " + bestActionIndex);
+        Debug.Log("bestActionIndex: " + 
+            new Vector2( x + lookX[bestActionIndex], y + lookY[bestActionIndex]));
+
+
+        Vector3 targetPosition = GridManager.GetGrid().GetWorldPosition(x + lookX[bestActionIndex], y + lookY[bestActionIndex]);
+        transform.position = targetPosition;
+        transform.position +=
+                Vector3.right * GridManager.GetGrid().GetCellSize() / 2
+                + Vector3.up * GridManager.GetGrid().GetCellSize() / 2;
 
         return actions[bestActionIndex];
     }

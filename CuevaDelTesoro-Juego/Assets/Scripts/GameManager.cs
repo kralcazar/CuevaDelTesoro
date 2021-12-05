@@ -54,7 +54,9 @@ public class GameManager : MonoBehaviour
         {
             agentsGO[i] = Instantiate(agentBase);
             agentsGO[i].transform.position = GridManager.GetGrid().GetWorldPosition((int)corners[i].x, (int)corners[i].y);
-            agentsGO[i].transform.position += Vector3.right * 0.5f + Vector3.up * 0.5f;
+            agentsGO[i].transform.position += 
+                Vector3.right * GridManager.GetGrid().GetCellSize()/2 
+                + Vector3.up * GridManager.GetGrid().GetCellSize() / 2;
             agents[i] = agentsGO[i].GetComponent<Agent>();
         }
     }

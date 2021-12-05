@@ -36,7 +36,6 @@ public class Enviroment
             Debug.Log(GridManager.GetGrid().XYInGrid(_x, _y));*/
             if (!GridManager.GetGrid().XYInGrid(_x, _y)) //La casilla está fuera del área (hay un muro).
             {
-                //perception[3] = true; //Golpe
                 continue;
             }
             CellType surroundingCellType = GridManager.GetGrid().GetGridObject(_x, _y).GetCellType();
