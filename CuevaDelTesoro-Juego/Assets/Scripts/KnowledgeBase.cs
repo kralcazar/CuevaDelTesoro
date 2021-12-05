@@ -17,8 +17,8 @@ public class KnowledgeBase
     // Conocimiento inferido, se conoce con seguridad el tipo de celda 
     private Dictionary<Vector2, CellType> knowledgeInfered = new Dictionary<Vector2, CellType>();
 
-    //<Cell, Visited>, las celdas visitadas por el agente
-    private Dictionary<Vector2, bool> knowledgeVisited = new Dictionary<Vector2, bool>();
+    //<Cell, Visited>, Las visitas realizadas en cada celda por el agente
+    private Dictionary<Vector2, int> knowledgeVisited = new Dictionary<Vector2, int>();
 
     //Meta
     private bool hasTresor;
@@ -47,9 +47,13 @@ public class KnowledgeBase
     {
         if (!knowledgeVisited.ContainsKey(gridPosition))
         {
-            knowledgeVisited.Add(gridPosition, true);
-            Debug.Log("InformVisited: " + gridPosition);
+            knowledgeVisited.Add(gridPosition, 1);
         }
+        else
+        {
+            knowledgeVisited[gridPosition]++;
+        }
+        Debug.Log("InformVisited: " + gridPosition + " : "+ knowledgeVisited[gridPosition]);
     }
 
     public void InformTresor(Vector2 gridPosition)
@@ -57,8 +61,8 @@ public class KnowledgeBase
         hasTresor = true;
     }
 
-    int[] lookX = { 0, -1, 0, 1, 0 };
-    int[] lookY = { 0, 0, 1, 0, -1 };
+    int[] lookX = { -1, 0, 1, 0 };
+    int[] lookY = { 0, 1, 0, -1 };
     //Aplicar las reglas para inferir conocimiento (deductivo)
     public void InferPerceptionRules(Vector2 gridPosition)
     {        
@@ -201,6 +205,7 @@ public class KnowledgeBase
         if (noMonster.ContainsKey(gridPosition)) //Si ya sabemos que no hay monstruo salimos
         {
             if (noMonster[gridPosition])
+
                 goto NoMatchMonster;
         }
         for (int i = 0; i < lookX.Length; i++)
@@ -217,8 +222,6 @@ public class KnowledgeBase
         SetKnowledgeInfered(gridPosition, CellType.Monster);
         return;
         NoMatchMonster:;
-
-
         if (noCliff.ContainsKey(gridPosition))//Si ya sabemos que no hay acantilado salimos
         {
             if (noCliff[gridPosition])
@@ -240,15 +243,18 @@ public class KnowledgeBase
         NoMatchCliff:;
 
 
+        //Si se sabe que hay pared saltamos
+        if (knowledgeInfered.ContainsKey(gridPosition)) if (knowledgePerceptions[gridPosition][3] || knowledgePerceptions[gridPosition][2]) goto EndWall;
         // Si se sabe que no hay monstruo ni acantilado ni tesoro la celda está vacía
-        if (noCliff.ContainsKey(gridPosition) && noMonster.ContainsKey(gridPosition) && knowledgeInfered.ContainsKey(gridPosition))
+        if (noCliff.ContainsKey(gridPosition) && noMonster.ContainsKey(gridPosition))
         {
-            if (noCliff[gridPosition] && noMonster[gridPosition] && !knowledgePerceptions[gridPosition][3])
+            if (noCliff[gridPosition] && noMonster[gridPosition])
             {
                 SetKnowledgeInfered(gridPosition, CellType.Empty);
                 return;
             }
         }
+        EndWall:;
     }
 
     private void SetKnowledgeInfered(Vector2 gridPosition, CellType cellType)
@@ -277,14 +283,18 @@ public class KnowledgeBase
     //Devuelve la prioridad de la acción a tomar -1: No, 1: Poca prioridad, 2: Mucha prioridad (deductivo)
     public int AskPriority(Vector2 gridPosition)
     {
+        if (knowledgePerceptions[gridPosition][3]) return int.MinValue; //Golpe
+
         if (!hasTresor) //Si no tiene el tesoro (iterar por celdas seguras)
         {
             Debug.Log("AskPriority: " + gridPosition);
 
             if (knowledgeVisited.ContainsKey(gridPosition))
             {
-                Debug.LogError("Ask " + knowledgeVisited[gridPosition]);
-                return 0; //Mínima prioridad para poder volver atrás por el camino visitado
+                Debug.LogError("Ask visited " + knowledgeVisited[gridPosition]);
+                //Mínima prioridad para poder volver atrás por el camino visitado
+                //Cuantas más visitas ha hecho menos prioridad tiene
+                return -knowledgeVisited[gridPosition]; 
             }
 
             if (knowledgeInfered.ContainsKey(gridPosition)) // Hay conocimiento sobre el estado de la celda
@@ -292,7 +302,6 @@ public class KnowledgeBase
                 Debug.Log("knowledgeInfered >> "+" : "+ gridPosition + knowledgeInfered[gridPosition]);
                 if (knowledgeInfered[gridPosition] == CellType.Tresor) return 2;
                 else if (knowledgeInfered[gridPosition] == CellType.Empty) return 1;
-                else return -1;
             }
         }
         else //Si tiene el tesoro (volver por las celdas ok)
@@ -301,6 +310,6 @@ public class KnowledgeBase
         }
 
 
-        return -1; //No conviene tomar esta casilla
+        return int.MinValue; //No conviene tomar esta casilla
     }
 }

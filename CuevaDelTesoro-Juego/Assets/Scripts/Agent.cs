@@ -23,7 +23,9 @@ public class Agent : MonoBehaviour
         int x, y;
         GridManager.GetGrid().GetXY(transform.position, out x, out y);
         kb.InformAction(new Vector2(x, y));
+        PercieveAndInformEnvironmentCell(x, y);
         PercieveAndInformEnvironmentSurroundings(x, y); // Paso 0: Percibir la primera celda e informar a la base de conocimientos
+        TryToInferCell(x, y);
         TryToInferSurroundings(x, y); // Paso 0: Inferir conocimiento en la base de conocimientos
     }
 
@@ -124,7 +126,7 @@ public class Agent : MonoBehaviour
     {
         Directions[] directions = { Directions.West , Directions.North, Directions.East, Directions.South};
         Action[] actions = new Action[lookX.Length];
-        int bestPriority = -1;
+        int bestPriority = int.MinValue;
         int bestActionIndex = -1;
 
         for (int i = 0; i < lookX.Length; i++)
@@ -135,7 +137,7 @@ public class Agent : MonoBehaviour
 
             Debug.Log("priority: "+ priority);
 
-            if (priority > bestPriority)
+            if (priority > bestPriority) //profundidad
             {
                 bestPriority = priority;
                 bestActionIndex = i;
@@ -145,7 +147,7 @@ public class Agent : MonoBehaviour
             actions[i].direction = directions[i];
         }
 
-        if (bestActionIndex == -1) return null;
+        if (bestPriority == int.MinValue) return null;
 
         Debug.Log("bestActionIndex: " + bestActionIndex);
         Debug.Log("bestActionIndex: " + 
