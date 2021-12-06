@@ -12,6 +12,9 @@ public class Agent : MonoBehaviour
     private KnowledgeBase kb;
     [SerializeField]
     private GameObject debugCellPrefab;
+    [SerializeField]
+    private Text numMovementsText;
+
     private Vector2 startGridPosition;
     private bool agentWon;
 
@@ -53,6 +56,9 @@ public class Agent : MonoBehaviour
             GridManager.GetGrid().GetXY(transform.position, out x, out y); //Tenemos que obtener la nueva posición del agente
             currentPosition = new Vector2(x, y);
             kb.InformAction(currentPosition); // Paso 4: Informar de la acción tomada (útil para marcar la celda ya visitada)
+            
+            //Show agent movements
+            numMovementsText.text = kb.GetMovements().ToString();
             
             //Si ha encontrado un tesoro lo elimina de la casilla
             CellType cellType = GridManager.GetGrid().GetGridObject(x, y).GetCellType();
@@ -163,6 +169,8 @@ public class Agent : MonoBehaviour
         }
 
         if (bestPriority == int.MinValue) return null;
+
+        kb.SetPreviousCellVisited(x, y);
 
         Vector3 targetPosition = GridManager.GetGrid().GetWorldPosition(x + lookX[bestActionIndex], y + lookY[bestActionIndex]);
         transform.position = targetPosition;

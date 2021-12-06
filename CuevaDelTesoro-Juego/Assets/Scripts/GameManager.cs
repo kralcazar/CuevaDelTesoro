@@ -35,6 +35,27 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void ResetInstance()
+    {
+        //Hay celdas que quedan huérfanas al eliminar los agentes,
+        //Se han borrado antes de ser añadidas a la lista de borrado.
+        //las borramos ahora...
+        DebugCell[] cells = FindObjectsOfType<DebugCell>();
+        foreach (DebugCell cell in cells)
+        {
+            Destroy(cell.gameObject); 
+        }
+        //Lo mismo con los agentes que no han empezado un juego
+        Agent[] agents = FindObjectsOfType<Agent>();
+        foreach (Agent a in agents)
+        {
+            Destroy(a.gameObject);
+        }
+
+        //Reiniciamos la instancia
+        instance = this;
+    }
+
     public static void InitGame()
     {
         instance.gridManager.GenerateGrid(gridSize);
@@ -78,16 +99,17 @@ public class GameManager : MonoBehaviour
 
         foreach (Agent a in agents)
         {
+            a.gameObject.SetActive(false);
             foreach (GameObject cell in a.debugCells)
             {
                 DestroyImmediate(cell);
             }
-            a.gameObject.SetActive(false);
             Destroy(a.gameObject);
         }
 
         instance.inputManager.GameOver();
     }
+
 
     void Update()
     {

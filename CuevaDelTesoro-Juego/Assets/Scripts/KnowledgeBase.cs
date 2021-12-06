@@ -24,6 +24,9 @@ public class KnowledgeBase
     private bool hasTresor;
 
     private Agent agent;
+    private Cell previousVisited;
+
+    private int numMovements;
 
     public KnowledgeBase(Agent agent)
     {
@@ -53,7 +56,7 @@ public class KnowledgeBase
         {
             knowledgeVisited[gridPosition]++;
         }
-        //Debug.Log("InformVisited: " + gridPosition + " : "+ knowledgeVisited[gridPosition]);
+        numMovements++;
     }
 
     public void InformTresor(Vector2 gridPosition)
@@ -343,6 +346,8 @@ public class KnowledgeBase
             {
                 //Si no es una casilla vacia no es segura
                 if (knowledgeInfered[gridPosition] != CellType.Empty) return int.MinValue;
+                
+
 
                 //Mínima prioridad para poder volver atrás por el camino visitado
                 //Cuantas más visitas ha hecho menos prioridad tiene
@@ -354,11 +359,17 @@ public class KnowledgeBase
                 //Para desempatar por el camino más visitado
                 int scoreVisited = 0;
                 if (knowledgeVisited.ContainsKey(gridPosition))
-                    scoreVisited = knowledgeVisited[gridPosition];
+                    scoreVisited = 10 * (knowledgeVisited[gridPosition] / numMovements);
 
                 //Para desempatar por la distancia más corta
                 int scoreDistance = Mathf.RoundToInt(10*(maxDistance/DistanceToStart(gridPosition)));
                 //Debug.LogWarning("scoreDistance:"+ gridPosition+" : " + scoreDistance);
+
+                //Si la casilla a la que vamos a ir la hemos visitado justo antes reduce prioridad (prevenir bucles)
+                if (GridManager.GetGrid().GetGridObject((int)gridPosition.x, (int)gridPosition.y) == previousVisited)
+                {
+                    scoreVisited -= 2;
+                }
 
                 return scoreVisited + scoreDistance;
             }
@@ -366,9 +377,19 @@ public class KnowledgeBase
         return int.MinValue; //No conviene tomar esta casilla
     }
 
+    public void SetPreviousCellVisited(int x, int y)
+    {
+        previousVisited = GridManager.GetGrid().GetGridObject(x, y);
+    }
+
     public bool HasTresor()
     {
         return hasTresor;
+    }
+
+    public int GetMovements()
+    {
+        return numMovements;
     }
 
     private float DistanceToStart(Vector2 gridPosition)

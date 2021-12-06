@@ -6,11 +6,12 @@ using System;
 
 public class InputManager : MonoBehaviour
 {
-    public GameObject initCanvas;
     public InputField inputGridSize;
     public InputField inputNumAgents;
     public Text prompt;
 
+    public GameManager gameManager;
+    public GameObject initCanvas;
     public GameObject game;
     public GameObject gameOver;
 
@@ -57,6 +58,7 @@ public class InputManager : MonoBehaviour
 
     public void ResetGame()
     {
+        gameManager.ResetInstance();
         gameOver.SetActive(false);
         game.SetActive(false);
         initCanvas.SetActive(true);
