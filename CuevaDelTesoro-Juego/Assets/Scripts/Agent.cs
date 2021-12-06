@@ -15,8 +15,10 @@ public class Agent : MonoBehaviour
     private Vector2 startGridPosition;
     private bool agentWon;
 
-    int[] lookX = { -1, 0, 1, 0 };
-    int[] lookY = { 0, 1, 0, -1 };
+    private int[] lookX = { -1, 0, 1, 0 };
+    private int[] lookY = { 0, 1, 0, -1 };
+
+    public List<GameObject> debugCells = new List<GameObject>();
 
     private void Start()
     {
@@ -36,7 +38,6 @@ public class Agent : MonoBehaviour
         if (agentWon)
         {
             GameManager.EndGame();
-            gameObject.SetActive(false);
             return;
         }
 
@@ -177,6 +178,7 @@ public class Agent : MonoBehaviour
         Text textGrid = debugCell.GetComponentInChildren<Text>();
         textGrid.text = text;
         debugCell.transform.position = GridManager.GetGrid().GetWorldPosition((int)gridPosition.x, (int)gridPosition.y);
+        debugCells.Add(debugCell);
     }
 
     public Vector2 GetStartGridPosition()

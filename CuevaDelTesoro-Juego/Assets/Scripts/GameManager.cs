@@ -21,6 +21,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float timeTick;
 
     [SerializeField] private GridManager gridManager;
+    [SerializeField] private InputManager inputManager;
     private static GameManager instance;
 
     private void Start()
@@ -74,6 +75,18 @@ public class GameManager : MonoBehaviour
     public static void EndGame()
     {
         playing = false;
+
+        foreach (Agent a in agents)
+        {
+            foreach (GameObject cell in a.debugCells)
+            {
+                DestroyImmediate(cell);
+            }
+            a.gameObject.SetActive(false);
+            Destroy(a.gameObject);
+        }
+
+        instance.inputManager.GameOver();
     }
 
     void Update()

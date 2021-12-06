@@ -22,13 +22,16 @@ public class GridManager : MonoBehaviour
     // Start is called before the first frame update
     public void GenerateGrid(int gridSize)
     {
+        //Remove all cells if it is started
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            Destroy(transform.GetChild(i).gameObject);
+        }
+
         rows = gridSize;
         cols = gridSize;
 
-        if (instance == null)
-        {
-            instance = this;
-        }
+        instance = this;
 
         grid = new Grid<Cell>(cols, rows, cellSize, (Grid<Cell> g, int x, int y) => new Cell(g, x, y), transform);
 
@@ -54,7 +57,7 @@ public class GridManager : MonoBehaviour
         instance.grid.GetXY(worldPosition, out x, out y);
         if (instance.grid.XYInGrid(x, y))
         {
-            Debug.Log(cellType + " to " + x + " : " + y);
+            //Debug.Log(cellType + " to " + x + " : " + y);
             instance.grid.GetGridObject(worldPosition).SetCellType(cellType);
         }
     }

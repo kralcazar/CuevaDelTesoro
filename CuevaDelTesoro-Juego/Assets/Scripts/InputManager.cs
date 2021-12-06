@@ -12,6 +12,13 @@ public class InputManager : MonoBehaviour
     public Text prompt;
 
     public GameObject game;
+    public GameObject gameOver;
+
+    private void Start()
+    {
+        inputGridSize.text = "6";
+        inputNumAgents.text = "1";
+    }
 
     public void StartGame()
     {
@@ -27,7 +34,6 @@ public class InputManager : MonoBehaviour
             return;
         }
             
-
         isParsable = int.TryParse(inputNumAgents.text, out int numAgents);
         if (isParsable)
             GameManager.numAgents = numAgents;
@@ -41,6 +47,24 @@ public class InputManager : MonoBehaviour
         game.SetActive(true);
 
         GameManager.InitGame();
+    }
+
+    public void GameOver()
+    {
+        game.SetActive(false);
+        gameOver.SetActive(true);
+    }
+
+    public void ResetGame()
+    {
+        gameOver.SetActive(false);
+        game.SetActive(false);
+        initCanvas.SetActive(true);
+    }
+
+    public void Quit()
+    {
+        Application.Quit();
     }
 
     private void ResetPrompt()
