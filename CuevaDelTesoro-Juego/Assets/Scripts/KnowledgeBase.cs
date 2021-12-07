@@ -316,7 +316,7 @@ public class KnowledgeBase
         return false;
     }
 
-    //Devuelve la prioridad de la acción a tomar MinValue: No, [MinValue..maxDistance*10]: Mayor prioridad, maxDistance*10: Máxima prioridad (deductivo)
+    //Devuelve la prioridad de la acción a tomar MinValue: No, [MinValue..MaxValue]: Mínima prioridad a Máxima prioridad (deductivo)
     public int AskPriority(Vector2 gridPosition)
     {
         if (knowledgePerceptions[gridPosition][3]) return int.MinValue; //Golpe
@@ -346,20 +346,19 @@ public class KnowledgeBase
             {
                 //Si no es una casilla vacia no es segura
                 if (knowledgeInfered[gridPosition] != CellType.Empty) return int.MinValue;
-                
 
+                if (agent.GetStartGridPosition() == gridPosition)
+                    return int.MaxValue;
 
                 //Mínima prioridad para poder volver atrás por el camino visitado
                 //Cuantas más visitas ha hecho menos prioridad tiene
                 int gridSize = GridManager.GetGrid().GetWidth();
                 float maxDistance = DistanceToStart(new Vector2(gridSize, gridSize));
-                if (agent.GetStartGridPosition() == gridPosition)
-                    return Mathf.RoundToInt(10*maxDistance);
 
                 //Para desempatar por el camino más visitado
                 int scoreVisited = 0;
                 if (knowledgeVisited.ContainsKey(gridPosition))
-                    scoreVisited = 10 * (knowledgeVisited[gridPosition] / numMovements);
+                    scoreVisited = 10 * (numMovements / knowledgeVisited[gridPosition]);
 
                 //Para desempatar por la distancia más corta
                 int scoreDistance = Mathf.RoundToInt(10*(maxDistance/DistanceToStart(gridPosition)));
@@ -367,9 +366,7 @@ public class KnowledgeBase
 
                 //Si la casilla a la que vamos a ir la hemos visitado justo antes reduce prioridad (prevenir bucles)
                 if (GridManager.GetGrid().GetGridObject((int)gridPosition.x, (int)gridPosition.y) == previousVisited)
-                {
-                    scoreVisited -= 2;
-                }
+                    scoreVisited -= 5;
 
                 return scoreVisited + scoreDistance;
             }

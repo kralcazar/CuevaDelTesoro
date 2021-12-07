@@ -124,11 +124,16 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void Tick()
+    public void Tick()
     {
         for (int i = 0; i < agents.Length; i++)
         {
             agents[i].Tick();
         }
+    }
+
+    public void SetTimeTick(float time)
+    {
+        timeTick = time;
     }
 }
